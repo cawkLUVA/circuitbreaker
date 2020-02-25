@@ -41,7 +41,7 @@ func TestCircuitBreaker_DoWithContext(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "successfully executes given a healthy system and closed circuit",
+			name: "successfully executes operation given a healthy system and closed circuit",
 			fields: fields{
 				state: State{
 					status: Closed,
@@ -55,6 +55,62 @@ func TestCircuitBreaker_DoWithContext(t *testing.T) {
 				},
 				stateChan: nil,
 				fallback:  nil,
+			},
+			args: args{
+				ctx: context.Background(),
+				operation: func() (interface{}, error) {
+					return 100, nil
+				},
+			},
+			want:    100,
+			wantErr: false,
+		},
+		{
+			name: "successfully calls fallback given an open circuit and non expired sleep window",
+			fields: fields{
+				state: State{
+					status:  Open,
+					updated: time.Now(),
+				},
+				config: Config{
+					SleepWindowMillisenconds: 100000,
+				},
+				health: &HealthMock{
+					err:      nil,
+					healthly: true,
+				},
+				stateChan: nil,
+				fallback: func() (interface{}, error) {
+					return 5, nil
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				operation: func() (interface{}, error) {
+					return 100, nil
+				},
+			},
+			want:    5,
+			wantErr: false,
+		},
+		{
+			name: "successfully executes operation given an open circuit and expired sleep window",
+			fields: fields{
+				state: State{
+					status:  Open,
+					updated: time.Now().Add(-1 * time.Minute),
+				},
+				config: Config{
+					SleepWindowMillisenconds: 1000,
+				},
+				health: &HealthMock{
+					err:      nil,
+					healthly: true,
+				},
+				stateChan: nil,
+				fallback: func() (interface{}, error) {
+					return 5, nil
+				},
 			},
 			args: args{
 				ctx: context.Background(),

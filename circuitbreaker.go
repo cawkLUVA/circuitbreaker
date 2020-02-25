@@ -92,10 +92,10 @@ func (c *CircuitBreaker) DoWithContext(ctx context.Context, operation func() (in
 		c.SetStatus(HalfOpen)
 	}
 
-	// service is now unhealthy, fail immediately. HalfOpen status is exempt
+	// if the service is now unhealthy, set the status to Open and call the fallback. HalfOpen status is exempt
 	if !c.health.Healthy() && c.Status() == Closed {
 		c.SetStatus(Open)
-		return nil, &CircuitOpenError{}
+		return c.fallback()
 	}
 
 	result, err := operation()
@@ -143,6 +143,5 @@ func defaultFallback() (interface{}, error) {
 	return nil, &CircuitOpenError{}
 }
 
-// TODO  channel for state change events
 // TODO  retry with default and custom backoff
 // TODO  Context Cancellation

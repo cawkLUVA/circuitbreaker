@@ -121,6 +121,62 @@ func TestCircuitBreaker_DoWithContext(t *testing.T) {
 			want:    100,
 			wantErr: false,
 		},
+		{
+			name: "successfully executes operation given an open circuit and expired sleep window",
+			fields: fields{
+				state: State{
+					status:  Open,
+					updated: time.Now().Add(-1 * time.Minute),
+				},
+				config: Config{
+					SleepWindowMillisenconds: 1000,
+				},
+				health: &HealthMock{
+					err:      nil,
+					healthly: true,
+				},
+				stateChan: nil,
+				fallback: func() (interface{}, error) {
+					return 5, nil
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				operation: func() (interface{}, error) {
+					return 100, nil
+				},
+			},
+			want:    100,
+			wantErr: false,
+		},
+		{
+			name: "opens the circuit and calls the fallback given an unhealthly system",
+			fields: fields{
+				state: State{
+					status:  Closed,
+					updated: time.Now().Add(-1 * time.Minute),
+				},
+				config: Config{
+					SleepWindowMillisenconds: 1000,
+				},
+				health: &HealthMock{
+					err:      nil,
+					healthly: false,
+				},
+				stateChan: nil,
+				fallback: func() (interface{}, error) {
+					return 5, nil
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				operation: func() (interface{}, error) {
+					return 100, nil
+				},
+			},
+			want:    5,
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

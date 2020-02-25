@@ -9,18 +9,18 @@ clean:
 	@rm -rf bin
 
 format:
-	go fmt ./internal/... ./circuit_breaker/...
+	go fmt ./internal/... ./
 
 install:
 	go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.21.0
 	go mod download
 
 test:
-	go test -cover -v ./internal/... ./circuit_breaker/...
+	go test -cover -v ./internal/... ./
 
 .PHONY: test-report
 test-report: 
-	go test -cover -v -coverprofile=coverage.out -json ./internal/... ./circuit_breaker/... | tee report.json
+	go test -cover -v -coverprofile=coverage.out -json ./internal/... ./ | tee report.json
 
 build: clean install
 	go mod vendor

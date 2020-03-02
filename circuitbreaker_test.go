@@ -25,9 +25,9 @@ func TestCircuitBreaker_DoWithContext(t *testing.T) {
 	type fields struct {
 		state     State
 		config    Config
-		health    Health
 		stateChan chan State
 		fallback  func() (interface{}, error)
+		healthy   func(health.Config, map[int64]map[health.MetricType]int64, []int64) bool
 	}
 	type args struct {
 		ctx       context.Context
@@ -49,9 +49,8 @@ func TestCircuitBreaker_DoWithContext(t *testing.T) {
 				config: Config{
 					SleepWindowMillisenconds: 1000,
 				},
-				health: &HealthMock{
-					err:      nil,
-					healthly: true,
+				healthy: func(health.Config, map[int64]map[health.MetricType]int64, []int64) bool {
+					return true
 				},
 				stateChan: nil,
 				fallback:  nil,
@@ -75,11 +74,10 @@ func TestCircuitBreaker_DoWithContext(t *testing.T) {
 				config: Config{
 					SleepWindowMillisenconds: 100000,
 				},
-				health: &HealthMock{
-					err:      nil,
-					healthly: true,
-				},
 				stateChan: nil,
+				healthy: func(health.Config, map[int64]map[health.MetricType]int64, []int64) bool {
+					return true
+				},
 				fallback: func() (interface{}, error) {
 					return 5, nil
 				},
@@ -103,11 +101,10 @@ func TestCircuitBreaker_DoWithContext(t *testing.T) {
 				config: Config{
 					SleepWindowMillisenconds: 1000,
 				},
-				health: &HealthMock{
-					err:      nil,
-					healthly: true,
-				},
 				stateChan: nil,
+				healthy: func(health.Config, map[int64]map[health.MetricType]int64, []int64) bool {
+					return true
+				},
 				fallback: func() (interface{}, error) {
 					return 5, nil
 				},
@@ -131,11 +128,10 @@ func TestCircuitBreaker_DoWithContext(t *testing.T) {
 				config: Config{
 					SleepWindowMillisenconds: 1000,
 				},
-				health: &HealthMock{
-					err:      nil,
-					healthly: true,
-				},
 				stateChan: nil,
+				healthy: func(health.Config, map[int64]map[health.MetricType]int64, []int64) bool {
+					return true
+				},
 				fallback: func() (interface{}, error) {
 					return 5, nil
 				},
@@ -159,11 +155,10 @@ func TestCircuitBreaker_DoWithContext(t *testing.T) {
 				config: Config{
 					SleepWindowMillisenconds: 1000,
 				},
-				health: &HealthMock{
-					err:      nil,
-					healthly: false,
-				},
 				stateChan: nil,
+				healthy: func(health.Config, map[int64]map[health.MetricType]int64, []int64) bool {
+					return false
+				},
 				fallback: func() (interface{}, error) {
 					return 5, nil
 				},
@@ -177,16 +172,39 @@ func TestCircuitBreaker_DoWithContext(t *testing.T) {
 			want:    5,
 			wantErr: false,
 		},
+		{
+			name: "uses the default fallback when one is not supplied",
+			fields: fields{
+				state: State{
+					status:  Open,
+					updated: time.Now().Add(-1 * time.Minute),
+				},
+				config: Config{
+					SleepWindowMillisenconds: 1000000,
+				},
+
+				healthy: func(health.Config, map[int64]map[health.MetricType]int64, []int64) bool {
+					return false
+				},
+				stateChan: nil,
+				fallback:  nil,
+			},
+			args: args{
+				ctx: context.Background(),
+				operation: func() (interface{}, error) {
+					return 100, nil
+				},
+			},
+			want:    nil,
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := &CircuitBreaker{
-				state:     tt.fields.state,
-				config:    tt.fields.config,
-				health:    tt.fields.health,
-				stateChan: tt.fields.stateChan,
-				fallback:  tt.fields.fallback,
-			}
+
+			c := New(tt.fields.config, tt.fields.stateChan, tt.fields.fallback, tt.fields.healthy)
+			c.state = tt.fields.state
+
 			got, err := c.DoWithContext(tt.args.ctx, tt.args.operation)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CircuitBreaker.DoWithContext() error = %v, wantErr %v", err, tt.wantErr)

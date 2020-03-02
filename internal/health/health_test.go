@@ -148,7 +148,7 @@ func TestHealth_addKey(t *testing.T) {
 	}
 }
 
-// TODO add windowsize trimming logic
+// TODO add Windowsize trimming logic
 func TestHealth_AddMetric(t *testing.T) {
 	type fields struct {
 		metrics map[int64]map[MetricType]int64
@@ -338,8 +338,8 @@ func TestHealth_Healthy(t *testing.T) {
 				},
 				keys: []int64{930000000, 930000001},
 				config: Config{
-					windowSize:               999999999,
-					errorPercentageThreshold: 0.1,
+					WindowSize:               999999999,
+					ErrorPercentageThreshold: 0.1,
 				},
 				healthly: defaultHealthChecker,
 				now:      time.Date(2000, 1, 1, 12, 0, 1, 0, time.UTC),
@@ -361,8 +361,8 @@ func TestHealth_Healthy(t *testing.T) {
 				},
 				keys: []int64{930000000, 930000001},
 				config: Config{
-					windowSize:               999999999,
-					errorPercentageThreshold: 0.5,
+					WindowSize:               999999999,
+					ErrorPercentageThreshold: 0.5,
 				},
 				healthly: defaultHealthChecker,
 				now:      time.Date(2000, 1, 1, 12, 0, 1, 0, time.UTC),
@@ -388,8 +388,8 @@ func TestHealth_Healthy(t *testing.T) {
 				},
 				keys: []int64{100, 1580385979, 1580385980},
 				config: Config{
-					windowSize:               604800,
-					errorPercentageThreshold: 0.5,
+					WindowSize:               604800,
+					ErrorPercentageThreshold: 0.5,
 				},
 				healthly: defaultHealthChecker,
 				now:      time.Date(2020, 1, 30, 13, 0, 0, 0, time.UTC),

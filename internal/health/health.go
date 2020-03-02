@@ -28,8 +28,8 @@ const (
 
 // Config ...
 type Config struct {
-	windowSize               int64
-	errorPercentageThreshold float64
+	WindowSize               int64
+	ErrorPercentageThreshold float64
 }
 
 // Health ...
@@ -94,9 +94,8 @@ func (c *Health) addKey(key int64) {
 	c.keys = insertAtIndex(index, key, c.keys)
 }
 
-// TODO use this and remove the key from the map
 func (c *Health) removeExpiredKeys(now int64) []int64 {
-	index := binarySearchIndex(now-c.config.windowSize, c.keys)
+	index := binarySearchIndex(now-c.config.WindowSize, c.keys)
 	removed := c.keys[:index]
 	c.keys = c.keys[index:]
 
@@ -144,5 +143,5 @@ func defaultHealthChecker(config Config, metrics map[int64]map[MetricType]int64,
 		failed += float64(metrics[key][Timeout])
 	}
 
-	return (failed / (successful + failed)) < config.errorPercentageThreshold
+	return (failed / (successful + failed)) < config.ErrorPercentageThreshold
 }

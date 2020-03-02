@@ -47,6 +47,12 @@ type State struct {
 type Config struct {
 	// the length of time in milliseconds to wait before retrying when the circuit is open
 	SleepWindowMillisenconds int64
+
+	// the size of the in-memory metrics window
+	HealthMetricsWindowSize int64
+
+	// the error percentage threshold determining whether a system is healthy
+	HealthErrorPercentageThreshold float64
 }
 
 // CircuitBreaker ...
@@ -59,15 +65,26 @@ type CircuitBreaker struct {
 }
 
 // New ...
-func New(config Config, health Health, ch chan State, fallback func() (interface{}, error)) *CircuitBreaker {
+func New(
+	config Config,
+	ch chan State,
+	fallback func() (interface{}, error),
+	healthy func(health.Config, map[int64]map[health.MetricType]int64, []int64) bool,
+) *CircuitBreaker {
 
 	if fallback == nil {
 		fallback = defaultFallback
 	}
 
 	return &CircuitBreaker{
-		config:   config,
-		health:   health,
+		config: config,
+		health: health.New(
+			health.Config{
+				WindowSize:               config.HealthMetricsWindowSize,
+				ErrorPercentageThreshold: config.HealthErrorPercentageThreshold,
+			},
+			healthy,
+		),
 		fallback: fallback,
 		state: State{
 			status:  Closed,
